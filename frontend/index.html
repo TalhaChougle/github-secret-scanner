@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Secret Scanner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Inter:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --border: #30363d;
+  --border2: #3d444d;
+  --text: #e6edf3;
+  --muted: #7d8590;
+  --subtle: #4d555e;
+  --accent: #2f81f7;
+  --accent-dim: #1f6feb33;
+  --green: #3fb950;
+  --green-dim: #238636;
+  --red: #f85149;
+  --red-dim: #da3633;
+  --orange: #d29922;
+  --orange-dim: #bb8009;
+  --yellow: #e3b341;
+  --purple: #a371f7;
+  --critical: #ff7b72;
+  --high: #d29922;
+  --medium: #2f81f7;
+  --low: #3fb950;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Layout ── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.logo svg { color: var(--text); }
+
+.topbar-links {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.topbar-link {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+.topbar-link:hover { color: var(--text); background: var(--surface2); }
+
+.container { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+
+/* ── Hero / Search ── */
+.hero { text-align: center; margin-bottom: 40px; }
+.hero h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+.hero p { color: var(--muted); font-size: 15px; max-width: 520px; margin: 0 auto; }
+
+.scan-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.scan-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.input-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.input-wrap svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+input[type="text"], input[type="password"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 10px 14px 10px 38px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+input::placeholder { color: var(--subtle); }
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary { background: var(--green-dim); color: #fff; border: 1px solid var(--green); }
+.btn-primary:hover { background: #2ea043; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--border2); background: #2d333b; }
+.btn-danger { background: transparent; color: var(--red); border: 1px solid #3d1c1c; }
+.btn-danger:hover { background: #2a1515; }
+
+.options-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.option-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.option-group input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.option-group input[type="number"] {
+  width: 64px;
+  padding: 5px 8px 5px 8px;
+  font-size: 13px;
+}
+
+.token-row { margin-top: 12px; }
+
+.token-toggle {
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0;
+}
+
+.token-toggle:hover { color: var(--text); }
+
+.token-input-wrap {
+  display: none;
+  margin-top: 8px;
+  gap: 10px;
+}
+
+.token-input-wrap.visible { display: flex; }
+
+/* ── Progress ── */
+.progress-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  display: none;
+}
+
+.progress-section.visible { display: block; }
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.progress-status { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+.progress-pct { color: var(--accent); font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+.progress-track {
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.log-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  height: 120px;
+  overflow-y: auto;
+  color: var(--muted);
+}
+
+.log-box .log-find { color: var(--orange); }
+.log-box .log-error { color: var(--red); }
+.log-box .log-done { color: var(--green); }
+
+/* ── Summary stats ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+  display: none;
+}
+
+.stats-grid.visible { display: grid; }
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.sv-critical { color: var(--critical); }
+.sv-high { color: var(--high); }
+.sv-medium { color: var(--medium); }
+.sv-commits { color: var(--purple); }
+
+/* ── Findings ── */
+.findings-section { display: none; }
+.findings-section.visible { display: block; }
+
+.findings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.findings-title { font-size: 15px; font-weight: 600; }
+.findings-count { font-size: 12px; color: var(--muted); }
+
+.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.pill:hover { border-color: var(--border2); color: var(--text); }
+.pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.pill.active.critical { background: rgba(248,81,73,0.1); border-color: var(--red-dim); color: var(--critical); }
+.pill.active.high { background: rgba(210,153,34,0.1); border-color: var(--orange-dim); color: var(--high); }
+.pill.active.medium { background: var(--accent-dim); border-color: var(--accent); color: var(--medium); }
+.pill.active.low { background: rgba(63,185,80,0.1); border-color: var(--green-dim); color: var(--low); }
+
+.findings-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── Finding card ── */
+.finding-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.finding-card:hover { border-color: var(--border2); }
+
+.finding-summary {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sev-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-critical { background: var(--critical); box-shadow: 0 0 6px var(--critical)44; }
+.dot-high { background: var(--high); }
+.dot-medium { background: var(--medium); }
+.dot-low { background: var(--low); }
+
+.sev-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+
+.badge-critical { background: rgba(248,81,73,0.15); color: var(--critical); border: 1px solid rgba(248,81,73,0.25); }
+.badge-high { background: rgba(210,153,34,0.12); color: var(--high); border: 1px solid rgba(210,153,34,0.25); }
+.badge-medium { background: var(--accent-dim); color: var(--medium); border: 1px solid rgba(47,129,247,0.3); }
+.badge-low { background: rgba(63,185,80,0.1); color: var(--low); border: 1px solid rgba(63,185,80,0.25); }
+
+.finding-info { flex: 1; min-width: 0; }
+.finding-type { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.finding-file { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.finding-meta-right { text-align: right; flex-shrink: 0; }
+.commit-ref { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--purple); }
+.commit-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.chevron { color: var(--muted); transition: transform 0.2s; font-size: 12px; flex-shrink: 0; }
+.chevron.open { transform: rotate(90deg); }
+
+.finding-detail {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 16px;
+  background: var(--bg);
+}
+
+.finding-detail.open { display: block; }
+
+.detail-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.code-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre;
+  margin-bottom: 14px;
+}
+
+.code-highlight { background: rgba(210,153,34,0.2); border-radius: 2px; color: var(--yellow); }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.detail-kv { font-size: 12px; }
+.detail-key { color: var(--muted); margin-bottom: 2px; }
+.detail-val { font-family: 'JetBrains Mono', monospace; color: var(--text); word-break: break-all; }
+
+.remediation-box {
+  background: rgba(63,185,80,0.06);
+  border: 1px solid rgba(63,185,80,0.2);
+  border-left: 3px solid var(--green);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.exploit-banner {
+  background: rgba(248,81,73,0.06);
+  border: 1px solid rgba(248,81,73,0.2);
+  border-left: 3px solid var(--red);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--critical);
+  margin-bottom: 12px;
+}
+
+.action-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Empty / no results ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+/* ── Paste mode tab ── */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.tab-btn {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 12px 14px;
+  outline: none;
+  resize: vertical;
+  min-height: 160px;
+  margin-bottom: 12px;
+  transition: border-color 0.15s;
+}
+
+textarea:focus { border-color: var(--accent); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.25s;
+  z-index: 1000;
+  max-width: 320px;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { border-left: 3px solid var(--green); }
+.toast.error { border-left: 3px solid var(--red); }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .scan-row { flex-direction: column; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 22px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+    </svg>
+    GitHub Secret Scanner
+  </div>
+
+  <div class="topbar-links">
+    <a class="topbar-link" href="https://github.com" target="_blank">GitHub ↗</a>
+    <a class="topbar-link" href="/api/patterns" target="_blank">Patterns API</a>
+    <a class="topbar-link" href="/health" target="_blank">Health</a>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <h1>🔍 Secret History Scanner</h1>
+    <p>Scan any public GitHub repository's commit history for leaked API keys, passwords, tokens, and credentials.</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('repo')">Repository Scan</button>
+    <button class="tab-btn" onclick="switchTab('paste')">Paste Text</button>
+  </div>
+
+  <!-- Repo scan tab -->
+  <div class="tab-panel active" id="tab-repo">
+    <div class="scan-card">
+      <div class="scan-row">
+        <div class="input-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="repoInput" placeholder="owner/repo or https://github.com/owner/repo" />
+        </div>
+        <button class="btn btn-primary" id="scanBtn" onclick="startScan()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Scan
+        </button>
+        <button class="btn btn-secondary" onclick="stopScan()" id="stopBtn" style="display:none">Stop</button>
+      </div>
+
+      <div class="options-row">
+        <label class="option-group">
+          <input type="checkbox" id="optDeep" checked>
+          Scan full history
+        </label>
+        <label class="option-group">
+          Max commits:
+          <input type="number" id="optMax" value="50" min="1" max="200" style="padding-left:8px"/>
+        </label>
+        <button class="token-toggle" onclick="toggleToken()">+ Add GitHub token (for private repos)</button>
+      </div>
+
+      <div class="token-row">
+        <div class="token-input-wrap" id="tokenWrap">
+          <div class="input-wrap" style="flex:1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxx  (stored in memory only, never sent to our servers)" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick examples -->
+    <div style="margin-bottom:24px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <span style="font-size:12px; color:var(--muted);">Try:</span>
+      <button class="pill active" onclick="setRepo('torvalds/linux')">torvalds/linux</button>
+      <button class="pill active" onclick="setRepo('django/django')">django/django</button>
+      <button class="pill active" onclick="setRepo('expressjs/express')">expressjs/express</button>
+      <button class="pill active" onclick="setRepo('psf/requests')">psf/requests</button>
+    </div>
+  </div>
+
+  <!-- Paste tab -->
+  <div class="tab-panel" id="tab-paste">
+    <div class="scan-card">
+      <p style="color:var(--muted); font-size:13px; margin-bottom:12px;">Paste code, config files, or any text to scan for secrets instantly — no GitHub connection needed.</p>
+      <textarea id="pasteContent" placeholder="Paste your code, .env file, config, or any text here..."></textarea>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <input type="text" id="pasteFilename" placeholder="filename.ext (optional)" style="max-width:220px; padding-left:14px;" />
+        <button class="btn btn-primary" onclick="scanPaste()">Scan Text</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('pasteContent').value=''">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-header">
+      <span class="progress-status" id="progressStatus">Initializing...</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-value sv-critical" id="statCritical">0</div>
+      <div class="stat-label">Critical</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value sv-high" id="statHigh">0</div>
+      <div class="stat-label">High</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value sv-medium" id="statMedium">0</div>
+      <div class="stat-label">Medium / Low</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value sv-commits" id="statCommits">0</div>
+      <div class="stat-label">Commits Scanned</div>
+    </div>
+  </div>
+
+  <!-- Findings -->
+  <div class="findings-section" id="findingsSection">
+    <div class="findings-header">
+      <div>
+        <div class="findings-title">Findings</div>
+        <div class="findings-count" id="findingsCount"></div>
+      </div>
+      <div class="filter-pills">
+        <button class="pill active" onclick="setFilter(this,'all')">All</button>
+        <button class="pill critical" onclick="setFilter(this,'CRITICAL')">Critical</button>
+        <button class="pill high" onclick="setFilter(this,'HIGH')">High</button>
+        <button class="pill medium" onclick="setFilter(this,'MEDIUM')">Medium</button>
+        <button class="pill low" onclick="setFilter(this,'LOW')">Low</button>
+      </div>
+      <button class="btn btn-secondary" onclick="exportJSON()" style="font-size:12px">
+        ↓ Export JSON
+      </button>
+    </div>
+    <div class="findings-list" id="findingsList"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+// In development, the FastAPI backend runs on port 8000.
+// In production (Vercel/Netlify), set this to your deployed backend URL.
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : 'https://your-backend.onrender.com'; // ← replace with your deployed backend URL
+
+// ── State ───────────────────────────────────────────────────────────────────
+let allFindings = [];
+let activeFilter = 'all';
+let currentES = null;
+let scanning = false;
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (name === 'repo' && i === 0) || (name === 'paste' && i === 1));
+  });
+  document.getElementById('tab-repo').classList.toggle('active', name === 'repo');
+  document.getElementById('tab-paste').classList.toggle('active', name === 'paste');
+}
+
+// ── Token toggle ─────────────────────────────────────────────────────────────
+function toggleToken() {
+  const wrap = document.getElementById('tokenWrap');
+  wrap.classList.toggle('visible');
+}
+
+// ── Set repo from quick buttons ──────────────────────────────────────────────
+function setRepo(repo) {
+  document.getElementById('repoInput').value = repo;
+}
+
+// ── Start scan ───────────────────────────────────────────────────────────────
+async function startScan() {
+  const repo = document.getElementById('repoInput').value.trim();
+  if (!repo) { showToast('Enter a repository name or URL', 'error'); return; }
+  if (scanning) return;
+
+  // Reset UI
+  allFindings = [];
+  activeFilter = 'all';
+  resetUI();
+
+  const token = document.getElementById('tokenInput').value.trim();
+  const deep = document.getElementById('optDeep').checked;
+  const max = document.getElementById('optMax').value;
+
+  const params = new URLSearchParams({ repo, deep, max_commits: max });
+  if (token) params.set('token', token);
+
+  const url = `${API_BASE}/api/scan?${params}`;
+
+  scanning = true;
+  document.getElementById('scanBtn').disabled = true;
+  document.getElementById('stopBtn').style.display = 'inline-flex';
+  document.getElementById('progressSection').classList.add('visible');
+
+  currentES = new EventSource(url);
+
+  currentES.onmessage = (e) => {
+    const event = JSON.parse(e.data);
+    handleEvent(event);
+  };
+
+  currentES.onerror = () => {
+    if (scanning) {
+      logMessage('Connection error — backend may be offline. Check that the API server is running.', 'error');
+      finishScan();
+    }
+  };
+}
+
+function stopScan() {
+  if (currentES) { currentES.close(); currentES = null; }
+  logMessage('Scan stopped by user.', 'error');
+  finishScan();
+}
+
+function handleEvent(event) {
+  switch (event.type) {
+    case 'progress':
+      updateProgress(event.message, event.percent);
+      logMessage(event.message);
+      break;
+
+    case 'finding':
+      allFindings.push(event.finding);
+      updateStats();
+      renderFindings();
+      logMessage(`⚠ ${event.finding.severity} — ${event.finding.type} in ${event.finding.filename}`, 'find');
+      document.getElementById('findingsSection').classList.add('visible');
+      break;
+
+    case 'done':
+      updateProgress('Scan complete', 100);
+      logMessage(`✓ Done — ${event.findings_count} finding(s) in ${event.commits_scanned || event.total_commits} commits`, 'done');
+      document.getElementById('statCommits').textContent = (event.commits_scanned || event.total_commits || 0).toLocaleString();
+      if (event.findings_count === 0) {
+        document.getElementById('findingsList').innerHTML = `<div class="empty-state"><div class="icon">✅</div><h3>No secrets found</h3><p>No exposed credentials detected in the scanned commits.</p></div>`;
+        document.getElementById('findingsSection').classList.add('visible');
+      }
+      currentES.close();
+      finishScan();
+      break;
+
+    case 'error':
+      logMessage(`✗ Error: ${event.message}`, 'error');
+      finishScan();
+      break;
+  }
+}
+
+// ── Paste scan ───────────────────────────────────────────────────────────────
+async function scanPaste() {
+  const content = document.getElementById('pasteContent').value.trim();
+  if (!content) { showToast('Paste some content first', 'error'); return; }
+
+  const filename = document.getElementById('pasteFilename').value.trim() || 'pasted_content';
+
+  allFindings = [];
+  resetUI();
+  document.getElementById('progressSection').classList.add('visible');
+  updateProgress('Scanning...', 50);
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/scan/text`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, filename }),
+    });
+
+    if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+    const data = await resp.json();
+
+    allFindings = data.findings;
+    updateProgress('Done', 100);
+    logMessage(`✓ Scanned ${content.split('\n').length} lines — ${data.count} finding(s)`, 'done');
+    updateStats();
+    renderFindings();
+    document.getElementById('findingsSection').classList.add('visible');
+    document.getElementById('statsGrid').classList.add('visible');
+
+    if (data.count === 0) {
+      document.getElementById('findingsList').innerHTML = `<div class="empty-state"><div class="icon">✅</div><h3>No secrets found</h3><p>No exposed credentials detected.</p></div>`;
+    }
+  } catch (err) {
+    logMessage(`✗ ${err.message}`, 'error');
+    showToast('Backend offline? Run: uvicorn main:app --reload', 'error');
+  }
+}
+
+// ── UI helpers ───────────────────────────────────────────────────────────────
+function resetUI() {
+  document.getElementById('findingsList').innerHTML = '';
+  document.getElementById('statsGrid').classList.remove('visible');
+  document.getElementById('findingsSection').classList.remove('visible');
+  document.getElementById('logBox').innerHTML = '';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressPct').textContent = '0%';
+  document.getElementById('progressStatus').textContent = 'Initializing...';
+  document.getElementById('statCritical').textContent = '0';
+  document.getElementById('statHigh').textContent = '0';
+  document.getElementById('statMedium').textContent = '0';
+  document.getElementById('statCommits').textContent = '0';
+  document.getElementById('findingsCount').textContent = '';
+  document.querySelectorAll('.pill').forEach(p => { p.classList.remove('active'); if (p.textContent === 'All') p.classList.add('active'); });
+}
+
+function finishScan() {
+  scanning = false;
+  document.getElementById('scanBtn').disabled = false;
+  document.getElementById('stopBtn').style.display = 'none';
+  document.getElementById('statsGrid').classList.add('visible');
+}
+
+function updateProgress(message, percent) {
+  document.getElementById('progressStatus').textContent = message;
+  document.getElementById('progressPct').textContent = percent + '%';
+  document.getElementById('progressFill').style.width = percent + '%';
+}
+
+function logMessage(msg, cls = '') {
+  const box = document.getElementById('logBox');
+  const div = document.createElement('div');
+  if (cls) div.className = `log-${cls}`;
+  div.textContent = `> ${msg}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function updateStats() {
+  document.getElementById('statCritical').textContent = allFindings.filter(f => f.severity === 'CRITICAL').length;
+  document.getElementById('statHigh').textContent = allFindings.filter(f => f.severity === 'HIGH').length;
+  document.getElementById('statMedium').textContent = allFindings.filter(f => f.severity === 'MEDIUM' || f.severity === 'LOW').length;
+}
+
+// ── Findings rendering ───────────────────────────────────────────────────────
+function setFilter(el, sev) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  activeFilter = sev;
+  renderFindings();
+}
+
+function renderFindings() {
+  const filtered = activeFilter === 'all'
+    ? allFindings
+    : allFindings.filter(f => f.severity === activeFilter);
+
+  document.getElementById('findingsCount').textContent =
+    `${filtered.length} finding${filtered.length !== 1 ? 's' : ''}${activeFilter !== 'all' ? ` (${allFindings.length} total)` : ''}`;
+
+  if (filtered.length === 0) {
+    document.getElementById('findingsList').innerHTML = `<div class="empty-state"><div class="icon">🔍</div><h3>No findings for this filter</h3></div>`;
+    return;
+  }
+
+  document.getElementById('findingsList').innerHTML = filtered.map((f, i) => {
+    const sev = f.severity.toLowerCase();
+    const contextHtml = (f.context || [f.line_content]).map(line => {
+      const escaped = line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      if (f.match && line.includes(f.match.replace('...', ''))) {
+        return escaped.replace(
+          f.match.replace('...', '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&').substring(0, 40),
+          m => `<span class="code-highlight">${m}</span>`
+        );
+      }
+      return escaped;
+    }).join('\n');
+
+    return `
+    <div class="finding-card" id="fc-${i}">
+      <div class="finding-summary" onclick="toggleDetail(${i})">
+        <div class="sev-dot dot-${sev}"></div>
+        <span class="sev-badge badge-${sev}">${f.severity}</span>
+        <div class="finding-info">
+          <div class="finding-type">${f.type}</div>
+          <div class="finding-file">${f.filename || ''}${f.line_number ? `:${f.line_number}` : ''}</div>
+        </div>
+        <div class="finding-meta-right">
+          ${f.commit ? `<div class="commit-ref">${f.commit}</div>` : ''}
+          ${f.date ? `<div class="commit-date">${f.date}</div>` : ''}
+        </div>
+        <span class="chevron" id="chev-${i}">›</span>
+      </div>
+      <div class="finding-detail" id="fd-${i}">
+        <div class="detail-label">Context</div>
+        <div class="code-block">${contextHtml || f.line_content || '(no context)'}</div>
+
+        <div class="detail-grid">
+          <div class="detail-kv"><div class="detail-key">Category</div><div class="detail-val">${f.category || '—'}</div></div>
+          <div class="detail-kv"><div class="detail-key">Match</div><div class="detail-val">${f.match || '—'}</div></div>
+          ${f.author ? `<div class="detail-kv"><div class="detail-key">Author</div><div class="detail-val">${f.author}</div></div>` : ''}
+          ${f.commit_message ? `<div class="detail-kv"><div class="detail-key">Commit message</div><div class="detail-val">${f.commit_message}</div></div>` : ''}
+        </div>
+
+        ${f.severity === 'CRITICAL' ? '<div class="exploit-banner">⚠ Critical severity — treat this as actively exposed. Revoke immediately.</div>' : ''}
+
+        <div class="remediation-box">
+          <strong>Remediation:</strong> ${f.remediation || 'Rotate this credential and store it in environment variables or a secrets manager.'}
+        </div>
+
+        <div class="action-row">
+          ${f.commit_full && f.repo ? `<a class="btn btn-secondary" href="https://github.com/${f.repo}/commit/${f.commit_full}" target="_blank" style="font-size:12px; text-decoration:none">View commit ↗</a>` : ''}
+          <button class="btn btn-secondary" style="font-size:12px" onclick="copyText('${f.match?.replace(/'/g, "\\'")}')">Copy match</button>
+          <button class="btn btn-danger" style="font-size:12px; margin-left:auto" onclick="dismissFinding(${i})">Dismiss</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDetail(i) {
+  const detail = document.getElementById(`fd-${i}`);
+  const chev = document.getElementById(`chev-${i}`);
+  const open = detail.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+function dismissFinding(i) {
+  const card = document.getElementById(`fc-${i}`);
+  if (card) card.style.display = 'none';
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).catch(() => {});
+  showToast('Copied to clipboard', 'success');
+}
+
+function exportJSON() {
+  if (!allFindings.length) { showToast('No findings to export', 'error'); return; }
+  const blob = new Blob([JSON.stringify(allFindings, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'secret-scanner-findings.json';
+  a.click();
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Enter key on repo input ──────────────────────────────────────────────────
+document.getElementById('repoInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startScan();
+});
+</script>
+</body>
+</html>
