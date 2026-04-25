@@ -1,52 +1,110 @@
 # 🔍 GitHub Secret History Scanner
 
-A full-stack security tool that scans GitHub repository commit history for leaked API keys, passwords, tokens, and credentials — built with **FastAPI** + **vanilla JS**.
+> A full-stack security tool that scans GitHub repository commit history for leaked API keys, passwords, tokens, and credentials — in real time.
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue?style=flat-square&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green?style=flat-square&logo=fastapi)
+![Python](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
+
+---
+
+## 🎯 What is this?
+
+When developers accidentally commit secrets (API keys, passwords, tokens) to GitHub — even if they delete them in the next commit — those secrets **live forever in git history**. Anyone can scroll back through old commits and find them.
+
+This tool automates that process for security auditing. It:
+
+- Connects to the **real GitHub API**
+- Walks through every commit in a repo's history
+- Scans file contents using **24 regex detection patterns**
+- Streams findings **live** as they are discovered
+- Shows the exact file, line number, code context, and remediation steps
+
+This is how tools like **TruffleHog** and **GitLeaks** work — and how attackers scan public repos for exposed credentials.
+
+---
 
 ## ✨ Features
 
-- **Real-time streaming** — results appear as commits are scanned via Server-Sent Events
-- **24 detection patterns** — AWS keys, GitHub tokens, Stripe keys, DB passwords, JWT secrets, private keys, and more
-- **Full git history scan** — traverses all commits, not just the latest
-- **Paste mode** — scan any text directly without a GitHub connection
-- **Severity triage** — Critical / High / Medium / Low with remediation guidance
-- **Export** — download findings as JSON for reporting
-- **Private repo support** — provide a GitHub PAT for private repos and higher API rate limits
+| Feature | Description |
+|---|---|
+| 🔴 Real-time streaming | Results appear live via Server-Sent Events as commits are scanned |
+| 🔎 24 detection patterns | AWS, GitHub, Stripe, Google, Discord, JWT, DB passwords, private keys & more |
+| 📜 Full history scan | Traverses all commits, not just the latest — secrets deleted years ago are still found |
+| 📋 Paste mode | Scan any text, config file, or code snippet directly — no GitHub needed |
+| 🎯 Severity triage | Critical / High / Medium / Low with exact line numbers and code context |
+| 🔧 Remediation guidance | Every finding includes specific steps to fix the exposure |
+| 📤 JSON export | Download findings as a report for documentation or incident response |
+| 🔑 Private repo support | Add a GitHub PAT to scan private repos and get 5000 req/hr vs 60 |
+| ⚡ Auto token loading | Store token in `.env` — never paste it manually again |
 
-## 🚀 Quick Start (Local)
+---
 
-### 1. Clone and set up the backend
+## 🖥 Demo
+
+> Scanned `TalhaChougle/neural-trace` and found a real Google API key committed in the initial commit inside a `.env` file.
+
+```
+HIGH  |  Google API Key
+      |  .env : line 1
+      |  VITE_GOOGLE_API_KEY=AIzaSyC1CJ9tL22d...
+      |  Commit: 19d0f1d | Author: amrshaikh | 2025-12-18
+      |  Remediation: Revoke at console.cloud.google.com/apis/credentials
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.11+
+- Git
+
+### 1 — Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/github-secret-scanner
-cd github-secret-scanner/backend
+git clone https://github.com/TalhaChougle/github-secret-scanner.git
+cd github-secret-scanner
+```
 
+### 2 — One click start (Windows)
+
+```
+Double-click start.bat
+```
+
+Your browser opens automatically at `http://localhost:3000`. Done.
+
+### 3 — Manual start (Mac/Linux or if start.bat doesn't work)
+
+**Terminal 1 — Backend:**
+```bash
+cd backend
 python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
 uvicorn main:app --reload --port 8000
 ```
 
-The API is now running at `http://localhost:8000`
-
-API docs (Swagger UI): `http://localhost:8000/docs`
-
-### 2. Open the frontend
-
-Open `frontend/index.html` in your browser — or serve it:
-
+**Terminal 2 — Frontend:**
 ```bash
-# Python simple server from the project root
-python -m http.server 3000 --directory frontend
+cd frontend
+python -m http.server 3000
 ```
 
-Then visit `http://localhost:3000`
+Visit `http://localhost:3000`
 
-> The frontend auto-detects localhost and points to `http://localhost:8000` for the API.
+### 4 — Add your GitHub token (removes rate limit)
+
+Create `backend/.env`:
+```
+GITHUB_TOKEN=ghp_your_token_here
+```
+
+Get a free token at [github.com/settings/tokens](https://github.com/settings/tokens) — only needs `public_repo` scope.
+
+This gives you **5,000 requests/hour** instead of 60 — enough to scan any repo.
 
 ---
 
@@ -55,47 +113,42 @@ Then visit `http://localhost:3000`
 ```
 github-secret-scanner/
 ├── backend/
-│   ├── main.py          # FastAPI app, API routes, SSE streaming
-│   ├── scanner.py       # GitHub API client, commit traversal logic
-│   ├── patterns.py      # 24 secret detection regex patterns
+│   ├── main.py          # FastAPI app — API routes, SSE streaming, .env loading
+│   ├── scanner.py       # GitHub API client — commit traversal, file fetching
+│   ├── patterns.py      # 24 secret detection regex patterns with metadata
 │   └── requirements.txt
 ├── frontend/
-│   └── index.html       # Single-page app (no build step needed)
+│   └── index.html       # Full SPA — no framework, no build step needed
+├── start.bat            # One-click Windows launcher
+├── start.sh             # One-click Mac/Linux launcher
 ├── Dockerfile           # Docker deployment
-├── render.yaml          # Render.com deployment config
-├── vercel.json          # Vercel deployment config (frontend)
+├── render.yaml          # Render.com backend deployment config
+├── vercel.json          # Vercel frontend deployment config
 └── README.md
 ```
 
 ---
 
-## 🌐 Deployment
+## 🔐 Detection Patterns
 
-### Frontend → Vercel (free)
-
-```bash
-npm i -g vercel
-vercel --prod
-```
-
-### Backend → Render (free tier)
-
-1. Push to GitHub
-2. Go to [render.com](https://render.com) → New Web Service
-3. Connect your repo, set root directory to `backend/`
-4. Build command: `pip install -r requirements.txt`
-5. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-6. After deploying, copy your Render URL into `frontend/index.html`:
-   ```js
-   const API_BASE = 'https://your-app.onrender.com';
-   ```
-
-### Docker (self-hosted)
-
-```bash
-docker build -t secret-scanner .
-docker run -p 8000:8000 secret-scanner
-```
+| Pattern | Severity | Example Match |
+|---|---|---|
+| AWS Access Key ID | 🔴 CRITICAL | `AKIA` + 16 chars |
+| GitHub Personal Access Token | 🔴 CRITICAL | `ghp_` + 36 chars |
+| Stripe Secret Key | 🔴 CRITICAL | `sk_live_` + 24 chars |
+| Firebase Service Account | 🔴 CRITICAL | `"type": "service_account"` |
+| RSA / EC Private Key | 🔴 CRITICAL | `-----BEGIN RSA PRIVATE KEY-----` |
+| Google API Key | 🟠 HIGH | `AIza` + 35 chars |
+| Slack API Token | 🟠 HIGH | `xox[baprs]-` |
+| Database Connection String | 🟠 HIGH | `postgres://user:pass@host` |
+| JWT Hardcoded Secret | 🟠 HIGH | `jwt_secret = "..."` |
+| Discord Bot Token | 🟠 HIGH | Discord token format |
+| NPM Auth Token | 🟠 HIGH | `_authToken=` |
+| SendGrid API Key | 🟠 HIGH | `SG.` + 65 chars |
+| Slack Webhook URL | 🟡 MEDIUM | `hooks.slack.com/services/...` |
+| Generic Secret / Password | 🟡 MEDIUM | `password = "..."` |
+| Stripe Publishable Key | 🟢 LOW | `pk_live_` |
+| + 9 more | | |
 
 ---
 
@@ -103,63 +156,78 @@ docker run -p 8000:8000 secret-scanner
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/health` | GET | Health check |
-| `/api/scan?repo=owner/repo` | GET | Stream scan results (SSE) |
-| `/api/scan/text` | POST | Scan pasted text content |
-| `/api/patterns` | GET | List all detection patterns |
+| `/health` | GET | Health check + token status |
+| `/api/scan` | GET | Stream scan via SSE |
+| `/api/scan/text` | POST | Scan pasted text |
+| `/api/patterns` | GET | All 24 detection patterns |
 | `/api/stats` | GET | Scanner statistics |
 | `/docs` | GET | Interactive Swagger UI |
 
-### Scan parameters
+### Query parameters for `/api/scan`
 
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `repo` | string | required | `owner/repo` or full GitHub URL |
-| `token` | string | optional | GitHub PAT (increases rate limit from 60 to 5000 req/hr) |
-| `max_commits` | int | 50 | How many commits to scan (max 200) |
-| `deep` | bool | true | Scan all history vs. recent commits only |
+| `token` | string | optional | GitHub PAT — overrides `.env` token |
+| `max_commits` | int | 50 | Commits to scan (max 500) |
+| `deep` | bool | true | Full history vs recent only |
 
 ---
 
-## 🔐 Detection Patterns
+## 🌐 Deployment
 
-| Pattern | Severity | Category |
-|---|---|---|
-| AWS Access Key ID | CRITICAL | Cloud |
-| GitHub Personal Access Token | CRITICAL | VCS |
-| Stripe Secret Key | CRITICAL | Payment |
-| Firebase Service Account | CRITICAL | Cloud |
-| RSA/EC Private Key | CRITICAL | Crypto |
-| Google API Key | HIGH | Cloud |
-| Slack API Token | HIGH | Comms |
-| Database Connection String | HIGH | Database |
-| JWT Hardcoded Secret | HIGH | Crypto |
-| NPM Auth Token | HIGH | Registry |
-| Discord Bot Token | HIGH | Comms |
-| Slack Webhook URL | MEDIUM | Comms |
-| Generic Secret/Password | MEDIUM | Generic |
-| Stripe Publishable Key | LOW | Payment |
-| ... and more | | |
+### Backend → Render (free)
 
----
+1. Go to [render.com](https://render.com) → New Web Service
+2. Connect this repo
+3. Root directory: `backend`
+4. Build: `pip install -r requirements.txt`
+5. Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+6. Add env var: `GITHUB_TOKEN` = your token
 
-## ⚠️ Ethical Use
+### Frontend → Netlify (free)
 
-This tool is for:
-- Auditing **your own** repositories
-- Authorized security assessments
-- Educational purposes
+1. Go to [netlify.com](https://netlify.com)
+2. Drag and drop the `frontend/` folder
+3. Update `DEPLOYED_API` in `frontend/index.html` with your Render URL
 
-Always obtain proper authorization before scanning repositories you don't own. Secrets found in public repos should be reported to the repository owner.
+### Docker
+
+```bash
+docker build -t secret-scanner .
+docker run -p 8000:8000 -e GITHUB_TOKEN=ghp_xxx secret-scanner
+```
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Backend**: Python 3.11, FastAPI, httpx (async HTTP), Server-Sent Events
-- **Frontend**: Vanilla JS, no framework, no build step
-- **Deployment**: Vercel (frontend) + Render/Railway (backend)
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.11, FastAPI, httpx (async) |
+| Streaming | Server-Sent Events (SSE) |
+| Frontend | Vanilla JS, no framework, no build step |
+| Detection | Regex pattern matching (24 patterns) |
+| GitHub data | GitHub REST API v3 |
+| Deployment | Render (backend) + Netlify (frontend) |
+
+---
+
+## ⚠️ Ethical Use
+
+This tool is intended for:
+- Auditing **your own** repositories
+- Authorized penetration testing engagements
+- Security awareness and education
+
+Always get proper authorization before scanning repositories you do not own. If you find exposed secrets in someone else's public repo, report them responsibly to the owner.
+
+---
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE)
+MIT — free to use, modify, and distribute.
+
+---
+
+<p align="center">Built as part of a cybersecurity portfolio · <a href="https://github.com/TalhaChougle">@TalhaChougle</a></p>
