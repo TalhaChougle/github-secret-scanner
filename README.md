@@ -1,3 +1,6 @@
+🌐 Live Demo: https://github-secret-scanner.netlify.app
+🔧 API: https://github-secret-scanner-api-production.up.railway.app
+
 # 🔍 GitHub Secret History Scanner
 
 > A full-stack security tool that scans GitHub repository commit history for leaked API keys, passwords, tokens, and credentials — in real time.
